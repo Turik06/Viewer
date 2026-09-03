@@ -1,6 +1,9 @@
 """!
 @file viewers/archives.py
 @brief Viewers for archive files (ZIP, TAR, GZ).
+@details Provides a viewer widget that lists the contents of archive files
+         without extracting them, using the standard library zipfile and
+         tarfile modules.
 """
 
 import zipfile
@@ -11,27 +14,44 @@ from PyQt6.QtCore import Qt
 from viewers.base import BaseViewerWidget
 from viewers.factory import ViewerFactory
 
+
 @ViewerFactory.register([".zip", ".tar", ".gz", ".tar.gz"])
 class ArchiveViewerWidget(BaseViewerWidget):
     """!
-    @brief Viewer for displaying contents of archive files.
+    @brief Viewer widget for displaying the contents of archive files.
+    @details Supports ZIP, TAR and GZ archives. Lists files contained in
+             the archive in a QTreeWidget with their names and sizes, without
+             actually extracting any data.
     """
-    
+
     def __init__(self, parent: QWidget | None = None) -> None:
+        """!
+        @brief Initialize archive viewer widget.
+        @param parent Optional parent widget.
+        """
         super().__init__(parent)
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        
+        self._layout = QVBoxLayout(self)
+        self._layout.setContentsMargins(0, 0, 0, 0)
+
         self.tree_widget = QTreeWidget(self)
         self.tree_widget.setHeaderLabels(["Имя файла", "Размер (байт)"])
-        self.layout.addWidget(self.tree_widget)
-        
+        self._layout.addWidget(self.tree_widget)
+
         self.error_label = QLabel(self)
         self.error_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.layout.addWidget(self.error_label)
+        self._layout.addWidget(self.error_label)
         self.error_label.hide()
-        
+
     def load_file(self, filepath: str) -> bool:
+        """!
+        @brief Load an archive file and display its contents list.
+        @details Detects the archive type (ZIP or TAR/GZ) and lists all
+                 contained files with their names and sizes. For raw .gz files
+                 that are not tar archives, a single entry is displayed.
+        @param filepath Path to the archive file to open.
+        @return True if file was loaded successfully, False otherwise.
+        """
+        self._current_filepath = filepath
         self.tree_widget.clear()
         try:
             if zipfile.is_zipfile(filepath):
@@ -51,13 +71,21 @@ class ArchiveViewerWidget(BaseViewerWidget):
                     self.tree_widget.addTopLevelItem(item)
                 else:
                     raise ValueError("Неподдерживаемый формат архива")
-            
+
             self.error_label.hide()
             self.tree_widget.show()
             return True
-            
+
         except Exception as e:
             self.tree_widget.hide()
             self.error_label.setText(f"Ошибка чтения архива:\n{e}")
             self.error_label.show()
             return False
+
+    def clear(self) -> None:
+        """!
+        @brief Clear viewer content and reset tree widget.
+        """
+        super().clear()
+        self.tree_widget.clear()
+        self.error_label.hide()
