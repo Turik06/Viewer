@@ -9,6 +9,8 @@ from viewers.text import TextViewerWidget
 from viewers.image import ImageViewerWidget
 from viewers.media import MediaViewerWidget
 from viewers.document import DocxViewerWidget, PdfViewerWidget
+from viewers.tables import TableViewerWidget
+from viewers.archives import ArchiveViewerWidget
 
 __all__ = [
     "BaseViewerWidget",
@@ -20,4 +22,6 @@ __all__ = [
     "MediaViewerWidget",
     "DocxViewerWidget",
     "PdfViewerWidget",
+    "TableViewerWidget",
+    "ArchiveViewerWidget",
 ]
