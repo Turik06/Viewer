@@ -3,8 +3,10 @@
 @brief Main window module containing the MainWindow class.
 """
 
-from PyQt6.QtCore import QDir, Qt
+from PyQt6.QtCore import QDir, Qt, QSortFilterProxyModel, QModelIndex
 from PyQt6.QtGui import QFileSystemModel
+from viewers.factory import ViewerFactory
+from viewers.base import MessageViewerWidget
 from PyQt6.QtWidgets import (
     QFrame,
     QLabel,
@@ -71,13 +73,23 @@ class MainWindow(QMainWindow):
 
         self.file_model = QFileSystemModel(self)
         current_path = QDir.currentPath()
-        root_index = self.file_model.setRootPath(current_path)
+        self.file_model.setRootPath(current_path)
+
+        self.proxy_model = QSortFilterProxyModel(self)
+        self.proxy_model.setSourceModel(self.file_model)
 
         self.tree_view = QTreeView(self.right_panel)
         self.tree_view.setObjectName("treeView")
-        self.tree_view.setModel(self.file_model)
-        self.tree_view.setRootIndex(root_index)
+        self.tree_view.setModel(self.proxy_model)
+        
+        # Enable sorting and set root index
+        self.tree_view.setSortingEnabled(True)
+        source_root_index = self.file_model.index(current_path)
+        proxy_root_index = self.proxy_model.mapFromSource(source_root_index)
+        self.tree_view.setRootIndex(proxy_root_index)
         self.tree_view.setAnimated(True)
+
+        self.tree_view.clicked.connect(self._on_tree_clicked)
 
         right_layout.addWidget(self.tree_view)
 
@@ -94,5 +106,39 @@ class MainWindow(QMainWindow):
         @brief Set the root path for the file tree model and view.
         @param path Filesystem path to display in the tree view.
         """
-        root_index = self.file_model.setRootPath(path)
-        self.tree_view.setRootIndex(root_index)
+        source_root_index = self.file_model.setRootPath(path)
+        proxy_root_index = self.proxy_model.mapFromSource(source_root_index)
+        self.tree_view.setRootIndex(proxy_root_index)
+
+
+    def _on_tree_clicked(self, index: QModelIndex) -> None:
+        """!
+        @brief Handle click on file tree item.
+        @param index Proxy model index of the clicked item.
+        """
+        source_index = self.proxy_model.mapToSource(index)
+        if not source_index.isValid():
+            return
+            
+        file_info = self.file_model.fileInfo(source_index)
+        if not file_info.isFile():
+            return
+            
+        filepath = file_info.absoluteFilePath()
+        
+        # Clear existing viewer widget if it's not the placeholder
+        current_widget = self.stacked_widget.currentWidget()
+        if current_widget is not self.placeholder_widget:
+            self.stacked_widget.removeWidget(current_widget)
+            current_widget.deleteLater()
+            
+        viewer = ViewerFactory.create_viewer_or_fallback(filepath, self.stacked_widget)
+        
+        try:
+            viewer.load_file(filepath)
+        except Exception as e:
+            viewer.deleteLater()
+            viewer = MessageViewerWidget(f"Не удалось открыть файл:\n{e}", self.stacked_widget)
+            
+        self.stacked_widget.addWidget(viewer)
+        self.stacked_widget.setCurrentWidget(viewer)
