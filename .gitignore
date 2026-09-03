@@ -1,0 +1,14 @@
+# Agent configs
+AGENT.md
+TASKS.md
+skills/
+.antigravity/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*$py.class
+venv/
+env/
+.env
