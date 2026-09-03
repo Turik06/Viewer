@@ -7,6 +7,8 @@ from viewers.base import BaseViewerWidget, MessageViewerWidget, ViewerMeta
 from viewers.factory import ViewerFactory
 from viewers.text import TextViewerWidget
 from viewers.image import ImageViewerWidget
+from viewers.media import MediaViewerWidget
+from viewers.document import DocxViewerWidget, PdfViewerWidget
 
 __all__ = [
     "BaseViewerWidget",
@@ -15,4 +17,7 @@ __all__ = [
     "ViewerMeta",
     "TextViewerWidget",
     "ImageViewerWidget",
+    "MediaViewerWidget",
+    "DocxViewerWidget",
+    "PdfViewerWidget",
 ]
